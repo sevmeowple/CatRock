@@ -29,12 +29,29 @@ go build -o bin/catrock ./cmd/catrock
 ### 语法示例
 
 ```crock
-BPM: 120
-C4 quarter
-D4 quarter
-E4 quarter
-F4 quarter
-G4 half
+set {
+    BPM: 120
+    base_duration: 1/4      
+}
+
+track melody {
+    section intro {
+        C4 D4 E4 F4
+        
+        G4/2 A4/1               
+        C4/8 D4/8 E4/8 F4/8     
+  
+        G4/2. A4/4.            
+       
+        (C4/8 D4/8 E4/8)       
+    }
+    
+    section verse {
+
+        C4 D4/8 E4/8 F4/2
+        [C4 E4 G4]/1        
+    }
+}
 ```
 
 ## 项目结构

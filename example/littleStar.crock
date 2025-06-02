@@ -1,43 +1,93 @@
-BPM: 120
-C4 quarter
-C4 quarter
-G4 quarter
-G4 quarter
-A4 quarter
-A4 quarter
-G4 half
-F4 quarter
-F4 quarter
-E4 quarter
-E4 quarter
-D4 quarter
-D4 quarter
-C4 half
-G4 quarter
-G4 quarter
-F4 quarter
-F4 quarter
-E4 quarter
-E4 quarter
-D4 half
-G4 quarter
-G4 quarter
-F4 quarter
-F4 quarter
-E4 quarter
-E4 quarter
-D4 half
-C4 quarter
-C4 quarter
-G4 quarter
-G4 quarter
-A4 quarter
-A4 quarter
-G4 half
-F4 quarter
-F4 quarter
-E4 quarter
-E4 quarter
-D4 quarter
-D4 quarter
-C4 whole
+set {
+    BPM: 120
+    base_duration: 1/4
+}
+
+track melody {
+    // 使用钢琴音色
+    set { instrument: piano }
+    
+    section verse_one {
+        // 小星星主旋律 - 使用新的/表示法
+        C4/4 C4/4 G4/4 G4/4
+        A4/4 A4/4 G4/2
+        F4/4 F4/4 E4/4 E4/4  
+        D4/4 D4/4 C4/2
+    }
+    
+    section verse_two {
+        G4/4 G4/4 F4/4 F4/4
+        E4/4 E4/4 D4/2
+        G4/4 G4/4 F4/4 F4/4
+        E4/4 E4/4 D4/2
+    }
+    
+    section verse_three {
+        // 重复第一段，使用分组增强表现力
+        (C4/4 C4/4) (G4/4 G4/4)
+        (A4/4 A4/4) G4/2
+        (F4/4 F4/4) (E4/4 E4/4)
+        (D4/4 D4/4) C4/1
+    }
+}
+
+track harmony {
+    // 使用弦乐音色
+    set { instrument: strings }
+    
+    section verse_one {
+        // C大调和弦进行：C - Am - F - G
+        [C3 E3 G3]/1    // C major - 1小节
+        [A2 C3 E3]/1    // A minor - 1小节  
+        [F2 A2 C3]/1    // F major - 1小节
+        [G2 B2 D3]/1    // G major - 1小节
+        
+        [F2 A2 C3]/1    // F major
+        [C3 E3 G3]/1    // C major
+        [G2 B2 D3]/1    // G major  
+        [C3 E3 G3]/1    // C major
+    }
+    
+    section verse_two {
+        // 使用不同的和弦节奏
+        [C3 E3 G3]/2 [A2 C3 E3]/2    // ✅ 修改：Am2 → A2 C3 E3
+        [F2 A2 C3]/2 [G2 B2 D3]/2
+        [C3 E3 G3]/2 [A2 C3 E3]/2    // ✅ 修改：Am2 → A2 C3 E3
+        [F2 A2 C3]/2 [G2 B2 D3]/2
+    }
+    
+    section verse_three {
+        // 更丰富的和弦编排
+        [C3 E3 G3 C4]/1              // 加高音
+        [A2 C3 E3 A3]/1  
+        [F2 A2 C3 F3]/1
+        [G2 B2 D3 G3]/2 [C3 E3 G3 C4]/2  // 最后渐强
+    }
+}
+
+track bass {
+    // 使用低音提琴音色
+    set { instrument: contrabass }
+    
+    section verse_one {
+        // 简单的根音低音线
+        C2/1 A1/1 F1/1 G1/1
+        F1/1 C2/1 G1/1 C2/1
+    }
+    
+    section verse_two {
+        // 更活跃的低音线
+        C2/2 C2/2 A1/2 A1/2
+        F1/2 F1/2 G1/2 G1/2
+        C2/2 C2/2 A1/2 A1/2
+        F1/2 F1/2 G1/2 G1/2
+    }
+    
+    section verse_three {
+        // 低音行进
+        C2/4 E2/4 G2/4 C2/4     // 上行
+        A1/4 C2/4 E2/4 A1/4     // 回落
+        F1/4 A1/4 C2/4 F1/4
+        G1/2 C2/1               // 结束
+    }
+}

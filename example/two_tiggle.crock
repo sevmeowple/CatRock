@@ -1,0 +1,21 @@
+set {
+    BPM: 100
+    base_duration: 1/4
+}
+
+track melody {
+    // 使用钢琴音色
+    set { instrument: guitar }
+    
+    section verse_one {
+        // 两只老虎主旋律
+        C4/4 D4/4 E4/4 C4/4     // 两只老虎
+        C4/4 D4/4 E4/4 C4/4     // 两只老虎
+        
+        E4/4 F4/4 G4/2          // 跑得快
+        rest/4                   // 换气
+        E4/4 F4/4 G4/2          // 跑得快
+        rest/2                   // 较长停顿
+    }
+
+}

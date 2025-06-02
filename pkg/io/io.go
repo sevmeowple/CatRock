@@ -22,6 +22,7 @@ type PlayChordParams struct {
 }
 
 type IO interface {
+	GetStatus() ConnectStatus // 获取当前连接状态
 	// Read reads data from the input source
 	Connect() (ConnectStatus, error)
 	Disconnect() (ConnectStatus, error)

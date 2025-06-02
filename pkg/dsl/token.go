@@ -1,6 +1,9 @@
 package dsl
 
-import "fmt"
+import (
+	"catRock/pkg/dsl/mytype"
+	"fmt"
+)
 
 type TokenType int
 
@@ -13,45 +16,47 @@ type TokenType int
 // 空白字符（Whitespace）（通常被跳过）
 const (
 	// 特殊关键字
-	ILLEGAL TokenType = iota	
+	ILLEGAL TokenType = iota
 	EOF
 	NEWLINE
 
 	// 字面量
-	NUMBER 
+	NUMBER
 	IDENTIFIER // 字符串
 
 	// 关键字
-	BPM
+	SET     //set
+	TRACK   //track
+	SECTION //section
 
 	// 音符名称
-    NOTE_C
-    NOTE_D  
-    NOTE_E
-    NOTE_F
-    NOTE_G
-    NOTE_A
-    NOTE_B
+	NOTE_C
+	NOTE_D
+	NOTE_E
+	NOTE_F
+	NOTE_G
+	NOTE_A
+	NOTE_B
 
 	// 符号
-	COLON //:
+	COLON    //:
+	SLASH    // /
+	DOT      // .
+	LBRACE   // {
+	RBRACE   // }
+	LBRACKET // [
+	RBRACKET // ]
+	LPAREN   // (
+	RPAREN   // )
 )
 
 type Token struct {
-	Type    TokenType // 令牌类型
-	Literal string    // 令牌的文本内容
-	Position Position // 令牌在源代码中的位置
+	Type     TokenType // 令牌类型
+	Literal  string    // 令牌的文本内容
+	Position mytype.Position  // 令牌在源代码中的位置
 }
 
-type Position struct {
-	Line  int // 行号，从1开始
-	Column int // 列号，从0开始
-}
 
-func (t Token) String() string {
-    return fmt.Sprintf("Token{Type: %v, Literal: %q, Pos: %d:%d}", 
-        t.Type, t.Literal, t.Position.Line, t.Position.Column)
-}
 // Token类型名称映射
 var tokenNames = map[TokenType]string{
     ILLEGAL:    "ILLEGAL",
@@ -59,7 +64,9 @@ var tokenNames = map[TokenType]string{
     NEWLINE:    "NEWLINE",
     NUMBER:     "NUMBER",
     IDENTIFIER: "IDENTIFIER",
-    BPM:        "BPM",
+    SET:        "SET",
+    TRACK:      "TRACK",
+    SECTION:    "SECTION",
     NOTE_C:     "NOTE_C",
     NOTE_D:     "NOTE_D",
     NOTE_E:     "NOTE_E",
@@ -68,11 +75,19 @@ var tokenNames = map[TokenType]string{
     NOTE_A:     "NOTE_A",
     NOTE_B:     "NOTE_B",
     COLON:      "COLON",
+    SLASH:      "SLASH",
+    DOT:        "DOT",
+    LBRACE:     "LBRACE",
+    RBRACE:     "RBRACE",
+    LBRACKET:   "LBRACKET",
+    RBRACKET:   "RBRACKET",
+    LPAREN:     "LPAREN",
+    RPAREN:     "RPAREN",
 }
 
 func (t TokenType) String() string {
-    if name, ok := tokenNames[t]; ok {
-        return name
-    }
-    return fmt.Sprintf("TokenType(%d)", int(t))
+	if name, ok := tokenNames[t]; ok {
+		return name
+	}
+	return fmt.Sprintf("TokenType(%d)", int(t))
 }

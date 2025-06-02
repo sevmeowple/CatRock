@@ -31,6 +31,10 @@ func NewMIDIPlayer() *MIDIPlayer {
 	}
 }
 
+func (p *MIDIPlayer) GetStatus() io.ConnectStatus {
+    return p.Status
+}
+
 func (p *MIDIPlayer) Connect() (io.ConnectStatus, error) {
 	// 获取可用的 MIDI 输出端口
 	outports := midi.GetOutPorts()
