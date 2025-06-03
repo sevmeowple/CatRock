@@ -1,4 +1,4 @@
-# CatRock DSL 音乐播放器
+# CatRock 音乐播放器
 
 一个简单的音乐编程语言
 使用 MIDI 作为后端播放

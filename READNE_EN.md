@@ -1,4 +1,4 @@
-# CatRock DSL Music Player
+# CatRock Music Player
 
 A simple music programming language that converts text descriptions to MIDI audio playback.
 
