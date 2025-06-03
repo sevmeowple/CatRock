@@ -25,7 +25,7 @@ func Execute(version string) error {
 
     // 添加子命令
     rootCmd.AddCommand(newPlayCmd())
-
+    rootCmd.AddCommand(newDebugCmd())
     return rootCmd.Execute()
 }
 

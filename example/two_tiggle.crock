@@ -5,17 +5,31 @@ set {
 
 track melody {
     // 使用钢琴音色
-    set { instrument: guitar }
+    set { instrument: 89 }
     
     section verse_one {
         // 两只老虎主旋律
-        C4/4 D4/4 E4/4 C4/4     // 两只老虎
-        C4/4 D4/4 E4/4 C4/4     // 两只老虎
-        
-        E4/4 F4/4 G4/2          // 跑得快
+        C2/4 D2/4 E2/4 C2/4     // 两只老虎
+        C2/4 D2/4 E2/4 C2/4     // 两只老虎
+
+        E2/4 F2/4 G2/2          // 跑得快
         rest/4                   // 换气
-        E4/4 F4/4 G4/2          // 跑得快
+        E2/4 F2/4 G2/2          // 跑得快
         rest/2                   // 较长停顿
+    }
+
+    section chord {
+        set {
+            channel: 3
+            instrument: 5 // 使用温柔铺垫音色
+        }
+        [C2 D2 E2]/4 [C2 D2 E2]/4 // 和弦伴奏
+        track sometrack {
+            set {
+                instrument: 6 // 使用柔和的音色
+            }
+            [C2 D2 E2]/4 [C2 D2 E2]/4
+        }
     }
 
 }

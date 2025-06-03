@@ -25,7 +25,7 @@ func NewPlayContext(bpm float64, volume int) PlayContext {
 		GlobalVolume:      volume,
 		CurrentBPM:        bpm,
 		CurrentVolume:     volume,
-		CurrentInstrument: core.AcousticGrandPiano,
+		CurrentInstrument: 1, // 默认乐器ID
 		CurrentChannel:    1,
 		ElementStack:      []string{},
 	}

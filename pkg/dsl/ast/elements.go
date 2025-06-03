@@ -86,6 +86,40 @@ type RestNode struct {
 
 var _ ElementNode = (*RestNode)(nil)
 
+func (n *NoteNode) DetailedString(indent string) string {
+    return fmt.Sprintf("NoteNode { 音符:%s%d, 时值:%s, 位置:%s }\n", 
+        n.Name, n.Octave, n.Duration, n.Position)
+}
+
+func (c *ChordNode) DetailedString(indent string) string {
+    result := fmt.Sprintf("ChordNode {\n")
+    result += fmt.Sprintf("%s  内容: %v (%T)\n", indent, c.Content, c.Content)
+    result += fmt.Sprintf("%s  时值: %s\n", indent, c.Duration)
+    result += fmt.Sprintf("%s  位置: %s\n", indent, c.Position)
+    result += fmt.Sprintf("%s}\n", indent)
+    return result
+}
+
+func (r *RestNode) DetailedString(indent string) string {
+    return fmt.Sprintf("RestNode { 时值:%s, 位置:%s }\n", r.Duration, r.Position)
+}
+
+func (g *GroupNode) DetailedString(indent string) string {
+    result := fmt.Sprintf("GroupNode {\n")
+    result += fmt.Sprintf("%s  时值: %s\n", indent, g.Duration)
+    result += fmt.Sprintf("%s  位置: %s\n", indent, g.Position)
+    
+    if len(g.Elements) > 0 {
+        result += fmt.Sprintf("%s  元素 (%d个):\n", indent, len(g.Elements))
+        for i, element := range g.Elements {
+            result += fmt.Sprintf("%s    [%d] %s", indent, i, element.DetailedString(indent+"      "))
+        }
+    }
+    
+    result += fmt.Sprintf("%s}\n", indent)
+    return result
+}
+
 func (r *RestNode) String() string {
     return fmt.Sprintf("Rest{%s}", r.Duration)
 }

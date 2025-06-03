@@ -7,3 +7,6 @@ bin/**
 # 本地测试
 test/local/**
 old/**
+
+# 日志文件
+*.log

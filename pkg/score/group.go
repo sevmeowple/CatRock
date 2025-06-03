@@ -176,3 +176,25 @@ func (g *GroupElement) ClearDuration() {
 func (g *GroupElement) HasDuration() bool {
     return g.duration != nil
 }
+
+func (g *GroupElement) DetailedString(indent string) string {
+    result := fmt.Sprintf("Group {\n")
+    result += fmt.Sprintf("%s  ID: %s\n", indent, g.GetID())
+    result += fmt.Sprintf("%s  元素数量: %d\n", indent, len(g.elements))
+    
+    if g.duration != nil {
+        result += fmt.Sprintf("%s  指定时长: %.3f拍\n", indent, *g.duration)
+    } else {
+        result += fmt.Sprintf("%s  计算时长: %.3f拍\n", indent, g.Duration(PlayContext{}))
+    }
+    
+    if len(g.elements) > 0 {
+        result += fmt.Sprintf("%s  元素:\n", indent)
+        for i, element := range g.elements {
+            result += fmt.Sprintf("%s    [%d] %s", indent, i, element.DetailedString(indent+"      "))
+        }
+    }
+    
+    result += fmt.Sprintf("%s}\n", indent)
+    return result
+}

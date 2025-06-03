@@ -27,12 +27,12 @@ func NewMIDIPlayer() *MIDIPlayer {
 	return &MIDIPlayer{
 		Status:  io.Disconnected,
 		Channel: 0, // 默认 MIDI 通道
-		Program: core.AcousticGrandPiano, // 默认乐器程序
+		Program: 1, // 默认 MIDI 程序号
 	}
 }
 
 func (p *MIDIPlayer) GetStatus() io.ConnectStatus {
-    return p.Status
+	return p.Status
 }
 
 func (p *MIDIPlayer) Connect() (io.ConnectStatus, error) {
@@ -74,127 +74,127 @@ func (p *MIDIPlayer) Disconnect() (io.ConnectStatus, error) {
 }
 
 func (p *MIDIPlayer) PlayNote(params io.PlayNoteParams) error {
-    if p.Status != io.Connected {
-        return fmt.Errorf("MIDI player not connected")
-    }
+	if p.Status != io.Connected {
+		return fmt.Errorf("MIDI player not connected")
+	}
 
-    if p.sender == nil {
-        return fmt.Errorf("MIDI sender not initialized")
-    }
+	if p.sender == nil {
+		return fmt.Errorf("MIDI sender not initialized")
+	}
 
-    // 智能切换通道和乐器
-    targetChannel := p.Channel
-    targetInstrument := p.Program
-    // 检查是否需要切换通道
-    if params.Note.Channel != 0 && params.Note.Channel != p.Channel {
-        targetChannel = params.Note.Channel
-    }
+	// 智能切换通道和乐器
+	targetChannel := p.Channel
+	targetInstrument := p.Program
+	// 检查是否需要切换通道
+	if params.Note.Channel != 0 && params.Note.Channel != p.Channel {
+		targetChannel = params.Note.Channel
+	}
 
-    // 检查是否需要切换乐器
-    if params.Note.Instrument != 0 && params.Note.Instrument != int(p.Program) {
-        targetInstrument = core.InstrumentID(params.Note.Instrument)
-    }
-    
-    // 执行切换（如果需要）
-    if targetChannel != p.Channel {
-        err := p.SetChannel(targetChannel)
-        if err != nil {
-            return fmt.Errorf("failed to switch channel: %v", err)
-        }
-    }
-    
-    if targetInstrument != p.Program {
-        err := p.SetProgram(targetInstrument)
-        if err != nil {
-            return fmt.Errorf("failed to switch instrument: %v", err)
-        }
-    }
-    
-    // 使用note的velocity，如果没有设置则使用player默认值
-    velocity := params.Note.Velocity
-    if velocity == 0 {
-        velocity = uint8(p.volume)
-    }
-    
-    // 发送 Note On
-    err := p.sender(midi.NoteOn(p.Channel, uint8(params.Note.MIDINote[0]), velocity))
-    if err != nil {
-        return fmt.Errorf("failed to send note on: %v", err)
-    }
+	// 检查是否需要切换乐器
+	if params.Note.Instrument != 0 && params.Note.Instrument != int(p.Program) {
+		targetInstrument = core.InstrumentID(params.Note.Instrument)
+	}
 
-    // 计算音符持续时间
-    bpm := params.Bpm
-    if bpm == 0 {
-        bpm = p.bpm
-    }
-    
-    duration := params.Note.Duration(float64(bpm))
-    time.Sleep(duration)
-    
-    fmt.Printf("Playing note %s for duration %v at BPM %d on channel %d\n", 
-               params.Note.Name, duration, bpm, p.Channel)
+	// 执行切换（如果需要）
+	if targetChannel != p.Channel {
+		err := p.SetChannel(targetChannel)
+		if err != nil {
+			return fmt.Errorf("failed to switch channel: %v", err)
+		}
+	}
 
-    // 发送 Note Off
-    err = p.sender(midi.NoteOff(p.Channel, uint8(params.Note.MIDINote[0])))
-    if err != nil {
-        return fmt.Errorf("failed to send note off: %v", err)
-    }
+	if targetInstrument != p.Program {
+		err := p.SetProgram(targetInstrument)
+		if err != nil {
+			return fmt.Errorf("failed to switch instrument: %v", err)
+		}
+	}
 
-    return nil
+	// 使用note的velocity，如果没有设置则使用player默认值
+	velocity := params.Note.Velocity
+	if velocity == 0 {
+		velocity = uint8(p.volume)
+	}
+
+	// 发送 Note On
+	err := p.sender(midi.NoteOn(p.Channel, uint8(params.Note.MIDINote[0]), velocity))
+	if err != nil {
+		return fmt.Errorf("failed to send note on: %v", err)
+	}
+
+	// 计算音符持续时间
+	bpm := params.Bpm
+	if bpm == 0 {
+		bpm = p.bpm
+	}
+
+	duration := params.Note.Duration(float64(bpm))
+	time.Sleep(duration)
+
+	fmt.Printf("Playing note %s for duration %v at BPM %d on channel %d\n",
+		params.Note.Name, duration, bpm, p.Channel)
+
+	// 发送 Note Off
+	err = p.sender(midi.NoteOff(p.Channel, uint8(params.Note.MIDINote[0])))
+	if err != nil {
+		return fmt.Errorf("failed to send note off: %v", err)
+	}
+
+	return nil
 }
 
 func (p *MIDIPlayer) PlayChord(params io.PlayChordParams) error {
-    if p.Status != io.Connected {
-        return fmt.Errorf("MIDI player not connected")
-    }
+	if p.Status != io.Connected {
+		return fmt.Errorf("MIDI player not connected")
+	}
 
-    if p.sender == nil {
-        return fmt.Errorf("MIDI sender not initialized")
-    }
+	if p.sender == nil {
+		return fmt.Errorf("MIDI sender not initialized")
+	}
 
-    // 对和弦中的每个音符发送 Note On
-    for _, note := range params.Chord.Notes {
-        // 检查每个音符是否需要切换设置
-        if note.Channel != 0 && note.Channel != p.Channel {
-            p.SetChannel(note.Channel)
-        }
-        
-        if note.Instrument != 0 && note.Instrument != int(p.Program) {
-            p.SetProgram(core.InstrumentID(note.Instrument))
-        }
-        
-        velocity := note.Velocity
-        if velocity == 0 {
-            velocity = uint8(p.volume)
-        }
-        
-        err := p.sender(midi.NoteOn(p.Channel, uint8(note.MIDINote[0]), velocity))
-        if err != nil {
-            return fmt.Errorf("failed to send note on for chord: %v", err)
-        }
-    }
+	// 对和弦中的每个音符发送 Note On
+	for _, note := range params.Chord.Notes {
+		// 检查每个音符是否需要切换设置
+		if note.Channel != 0 && note.Channel != p.Channel {
+			p.SetChannel(note.Channel)
+		}
 
-    // 计算和弦持续时间（使用第一个音符的时长）
-    bpm := params.Bpm
-    if bpm == 0 {
-        bpm = p.bpm
-    }
-    
-    duration := params.Chord.Notes[0].Duration(float64(bpm))
-    time.Sleep(duration)
-    
-    fmt.Printf("Playing chord for duration %v at BPM %d on channel %d\n", 
-               duration, bpm, p.Channel)
+		if note.Instrument != 0 && note.Instrument != int(p.Program) {
+			p.SetProgram(core.InstrumentID(note.Instrument))
+		}
 
-    // 对和弦中的每个音符发送 Note Off
-    for _, note := range params.Chord.Notes {
-        err := p.sender(midi.NoteOff(p.Channel, uint8(note.MIDINote[0])))
-        if err != nil {
-            return fmt.Errorf("failed to send note off for chord: %v", err)
-        }
-    }
+		velocity := note.Velocity
+		if velocity == 0 {
+			velocity = uint8(p.volume)
+		}
 
-    return nil
+		err := p.sender(midi.NoteOn(p.Channel, uint8(note.MIDINote[0]), velocity))
+		if err != nil {
+			return fmt.Errorf("failed to send note on for chord: %v", err)
+		}
+	}
+
+	// 计算和弦持续时间（使用第一个音符的时长）
+	bpm := params.Bpm
+	if bpm == 0 {
+		bpm = p.bpm
+	}
+
+	duration := params.Chord.Notes[0].Duration(float64(bpm))
+	time.Sleep(duration)
+
+	fmt.Printf("Playing chord for duration %v at BPM %d on channel %d\n",
+		duration, bpm, p.Channel)
+
+	// 对和弦中的每个音符发送 Note Off
+	for _, note := range params.Chord.Notes {
+		err := p.sender(midi.NoteOff(p.Channel, uint8(note.MIDINote[0])))
+		if err != nil {
+			return fmt.Errorf("failed to send note off for chord: %v", err)
+		}
+	}
+
+	return nil
 }
 
 func (p *MIDIPlayer) SetBPM(bpm int) error {
@@ -209,126 +209,126 @@ func (p *MIDIPlayer) SetVolume(volume int) error {
 
 // 设置MIDI通道
 func (p *MIDIPlayer) SetChannel(channel uint8) error {
-    if channel > 15 {
-        return fmt.Errorf("MIDI channel must be 0-15, got %d", channel)
-    }
-    p.Channel = channel
-    fmt.Printf("Switched to MIDI channel %d\n", channel)
-    return nil
+	if channel > 15 {
+		return fmt.Errorf("MIDI channel must be 0-15, got %d", channel)
+	}
+	p.Channel = channel
+	fmt.Printf("Switched to MIDI channel %d\n", channel)
+	return nil
 }
 
 // 设置乐器程序
 func (p *MIDIPlayer) SetProgram(instrumentID core.InstrumentID) error {
-    if p.Status != io.Connected {
-        return fmt.Errorf("MIDI player not connected")
-    }
+	if p.Status != io.Connected {
+		return fmt.Errorf("MIDI player not connected")
+	}
 
-    if p.sender == nil {
-        return fmt.Errorf("MIDI sender not initialized")
-    }
+	if p.sender == nil {
+		return fmt.Errorf("MIDI sender not initialized")
+	}
 
-    // 获取MIDI程序号
-    midiProgram := core.GetMIDIProgram(instrumentID)
-    
-    // 发送Program Change消息
-    err := p.sender(midi.ProgramChange(p.Channel, uint8(midiProgram)))
-    if err != nil {
-        return fmt.Errorf("failed to change program: %v", err)
-    }
+	// 获取MIDI程序号
+	midiProgram := core.GetMIDIProgram(instrumentID)
 
-    p.Program = instrumentID
-    
-    // 获取乐器信息用于日志
-    if instrument, exists := core.Instruments[instrumentID]; exists {
-        fmt.Printf("Changed to %s (Program %d) on channel %d\n", 
-                   instrument.Name, midiProgram, p.Channel)
-    } else {
-        fmt.Printf("Changed to program %d on channel %d\n", 
-                   midiProgram, p.Channel)
-    }
-    
-    return nil
+	// 发送Program Change消息
+	err := p.sender(midi.ProgramChange(p.Channel, uint8(midiProgram)))
+	if err != nil {
+		return fmt.Errorf("failed to change program: %v", err)
+	}
+
+	p.Program = instrumentID
+
+	return nil
 }
-
 
 // 实现低级MIDI事件发送
 func (p *MIDIPlayer) SendNoteOn(channel uint8, note uint8, velocity uint8) error {
-    if p.Status != io.Connected {
-        return fmt.Errorf("MIDI player not connected")
-    }
-    
-    if p.sender == nil {
-        return fmt.Errorf("MIDI sender not initialized")
-    }
-    
-    return p.sender(midi.NoteOn(channel, note, velocity))
+	if p.Status != io.Connected {
+		return fmt.Errorf("MIDI player not connected")
+	}
+
+	if p.sender == nil {
+		return fmt.Errorf("MIDI sender not initialized")
+	}
+
+	return p.sender(midi.NoteOn(channel, note, velocity))
 }
 
 func (p *MIDIPlayer) SendNoteOff(channel uint8, note uint8, velocity uint8) error {
-    if p.Status != io.Connected {
-        return fmt.Errorf("MIDI player not connected")
-    }
-    
-    if p.sender == nil {
-        return fmt.Errorf("MIDI sender not initialized")
-    }
-    
-    return p.sender(midi.NoteOff(channel, note))
+	if p.Status != io.Connected {
+		return fmt.Errorf("MIDI player not connected")
+	}
+
+	if p.sender == nil {
+		return fmt.Errorf("MIDI sender not initialized")
+	}
+
+	return p.sender(midi.NoteOff(channel, note))
 }
 
 func (p *MIDIPlayer) SendProgramChange(channel uint8, program uint8) error {
-    if p.Status != io.Connected {
-        return fmt.Errorf("MIDI player not connected")
-    }
-    
-    if p.sender == nil {
-        return fmt.Errorf("MIDI sender not initialized")
-    }
-    
-    return p.sender(midi.ProgramChange(channel, program))
+	if p.Status != io.Connected {
+		return fmt.Errorf("MIDI player not connected")
+	}
+
+	if p.sender == nil {
+		return fmt.Errorf("MIDI sender not initialized")
+	}
+
+	if channel == 9 {
+		fmt.Printf("DEBUG: 跳过鼓组通道的 PROGRAM_CHANGE - 通道:%d\n", channel)
+		return nil // 跳过鼓组通道的 Program Change
+	}
+
+	// 🔥 检查 program 是否为鼓组标识符
+	if program == 0 && channel != 9 {
+		fmt.Printf("DEBUG: Program 0 可能是鼓组，但通道不是 9 - 通道:%d, program:%d\n", channel, program)
+	}
+
+	return p.sender(midi.ProgramChange(channel, program))
 }
 
 func (p *MIDIPlayer) SendControlChange(channel uint8, controller uint8, value uint8) error {
-    if p.Status != io.Connected {
-        return fmt.Errorf("MIDI player not connected")
-    }
-    
-    if p.sender == nil {
-        return fmt.Errorf("MIDI sender not initialized")
-    }
-    
-    return p.sender(midi.ControlChange(channel, controller, value))
+	if p.Status != io.Connected {
+		return fmt.Errorf("MIDI player not connected")
+	}
+
+	if p.sender == nil {
+		return fmt.Errorf("MIDI sender not initialized")
+	}
+
+	return p.sender(midi.ControlChange(channel, controller, value))
 }
 
 // 新增：批量事件播放（可选的高级方法）
 func (p *MIDIPlayer) PlayEvents(params io.PlayEventsParams) error {
-    if p.Status != io.Connected {
-        return fmt.Errorf("MIDI player not connected")
-    }
-    
-    // 这里可以实现更高效的批量播放逻辑
-    // 比如预处理、优化、或者异步播放
-    for _, event := range params.Events {
-        err := p.executeEvent(event, params.BPM)
-        if err != nil {
-            return err
-        }
-    }
-    
-    return nil
+	if p.Status != io.Connected {
+		return fmt.Errorf("MIDI player not connected")
+	}
+
+	// 这里可以实现更高效的批量播放逻辑
+	// 比如预处理、优化、或者异步播放
+	for _, event := range params.Events {
+		err := p.executeEvent(event, params.BPM)
+		if err != nil {
+			return err
+		}
+	}
+
+	return nil
 }
 
 func (p *MIDIPlayer) executeEvent(event io.Event, bpm float64) error {
-    switch event.Type {
-    case io.NOTE_ON_EVENT:
-        return p.SendNoteOn(event.Channel, event.Data1, event.Data2)
-    case io.NOTE_OFF_EVENT:
-        return p.SendNoteOff(event.Channel, event.Data1, event.Data2)
-    case io.PROGRAM_CHANGE_EVENT:
-        return p.SendProgramChange(event.Channel, event.Data1)
-    case io.CONTROL_CHANGE_EVENT:
-        return p.SendControlChange(event.Channel, event.Data1, event.Data2)
-    default:
-        return fmt.Errorf("unsupported event type: %v", event.Type)
-    }
+	switch event.Type {
+	case io.NOTE_ON_EVENT:
+		return p.SendNoteOn(event.Channel, event.Data1, event.Data2)
+	case io.NOTE_OFF_EVENT:
+		return p.SendNoteOff(event.Channel, event.Data1, event.Data2)
+	case io.PROGRAM_CHANGE_EVENT:
+		return p.SendProgramChange(event.Channel, event.Data1)
+	case io.CONTROL_CHANGE_EVENT:
+		return p.SendControlChange(event.Channel, event.Data1, event.Data2)
+	default:
+		return fmt.Errorf("unsupported event type: %v", event.Type)
+	}
 }

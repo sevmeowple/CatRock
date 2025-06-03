@@ -221,7 +221,7 @@ func playMusic(scoreObj *score.Score, events []score.Event, engine *score.PlayEn
 	yellow.Printf("\n🎵 开始播放... (按Ctrl+C停止)\n\n")
 
 	// *** 使用Score的播放方法 ***
-	errChan, _, err := scoreObj.PlayWithIOAsync(midiPlayer)
+	errChan,err := engine.PlayEventsWithIOAsync(midiPlayer, events)
 	if err != nil {
 		red.Printf("❌ 播放准备失败: %v\n", err)
 		return err

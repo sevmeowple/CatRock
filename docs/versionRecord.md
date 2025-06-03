@@ -15,3 +15,7 @@
 
 - 完全实现了元素 group,note,chord 以及容器 section,track
 - 实现了一些 bug...
+
+### 0.2.1
+
+- 解决了一些乐器层面的 bug...

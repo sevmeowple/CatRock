@@ -77,7 +77,9 @@ func (p *Parser) parseTopLevelElement() ast.ASTNode {
 		return p.parseTrack()
 	case SECTION:
 		return p.parseSection()
-	case NOTE_C, NOTE_D, NOTE_E, NOTE_F, NOTE_G, NOTE_A, NOTE_B:
+	case NOTE_C, NOTE_D, NOTE_E, NOTE_F, NOTE_G, NOTE_A, NOTE_B,
+		NOTE_CS, NOTE_DS, NOTE_FS, NOTE_GS, NOTE_AS,
+		NOTE_DB, NOTE_EB, NOTE_GB, NOTE_AB, NOTE_BB:
 		return p.parseNote()
 	case LBRACKET:
 		return p.parseChord()
@@ -198,21 +200,20 @@ func (p *Parser) parseFraction() float64 {
 		p.addError(fmt.Sprintf("无效的分子: %s", numerator))
 		return 0.0
 	}
-	
+
 	den, err := strconv.ParseFloat(denominator, 64)
 	if err != nil {
 		p.addError(fmt.Sprintf("无效的分母: %s", denominator))
 		return 0.0
 	}
-	
+
 	if den == 0 {
 		p.addError("分母不能为零")
 		return 0.0
 	}
-	
+
 	return num / den
 }
-
 
 // 解析Track
 func (p *Parser) parseTrack() *ast.TrackNode {
@@ -310,190 +311,167 @@ func (p *Parser) parseSection() *ast.SectionNode {
 	return section
 }
 
-
 // 完全重写parseNote方法
 func (p *Parser) parseNote() *ast.NoteNode {
-    position := p.currentToken.Position
+	position := p.currentToken.Position
 
-    if !p.isNoteToken(p.currentToken.Type) {
-        p.addError(fmt.Sprintf("期望音符名称，得到 %s", p.currentToken.Literal))
-        return nil
-    }
+	if !p.isNoteToken(p.currentToken.Type) {
+		p.addError(fmt.Sprintf("期望音符名称，得到 %s", p.currentToken.Literal))
+		return nil
+	}
 
-    noteName := p.currentToken.Literal
-    p.nextToken()
+	noteName := p.currentToken.Literal
+	p.nextToken()
 
-    if p.currentToken.Type != NUMBER {
-        p.addError(fmt.Sprintf("期望八度数字，得到 %s", p.currentToken.Literal))
-        return nil
-    }
+	if p.currentToken.Type != NUMBER {
+		p.addError(fmt.Sprintf("期望八度数字，得到 %s", p.currentToken.Literal))
+		return nil
+	}
 
-    octave, err := strconv.Atoi(p.currentToken.Literal)
-    if err != nil || octave < 0 || octave > 9 {
-        p.addError(fmt.Sprintf("无效的八度值: %s", p.currentToken.Literal))
-        return nil
-    }
+	octave, err := strconv.Atoi(p.currentToken.Literal)
+	if err != nil || octave < 0 || octave > 9 {
+		p.addError(fmt.Sprintf("无效的八度值: %s", p.currentToken.Literal))
+		return nil
+	}
 
-    p.nextToken()
+	p.nextToken()
 
-    // 解析时值 - 支持 /分数表示法
-    duration := p.parseNoteDuration()
+	// 解析时值 - 支持 /分数表示法
+	duration := p.parseNoteDuration()
 
-    return &ast.NoteNode{
-        Name:     noteName,
-        Octave:   octave,
-        Duration: duration,
-        Position: position,
-    }
+	return &ast.NoteNode{
+		Name:     noteName,
+		Octave:   octave,
+		Duration: duration,
+		Position: position,
+	}
 }
 
-// 新的音符时值解析方法
+// 检查这个方法的实现
 func (p *Parser) parseNoteDuration() string {
-    // 默认时值
-    defaultDuration := "1/4" // 四分音符
-
-    // 检查是否有时值修饰符
-    if p.currentToken.Type == SLASH {
-        p.nextToken() // 跳过斜杠
-        
-        if p.currentToken.Type == NUMBER {
-            denominator := p.currentToken.Literal
-            p.nextToken()
-            
-            // 检查附点
-            dotted := ""
-            if p.currentToken.Type == DOT {
-                dotted = "."
-                p.nextToken()
-            }
-            
-            // 返回分数形式的时值
-            return fmt.Sprintf("1/%s%s", denominator, dotted)
-        } else {
-            p.addError("期望时值分母")
-            return defaultDuration
-        }
-    } else if p.currentToken.Type == IDENTIFIER && p.isValidDuration(p.currentToken.Literal) {
-        // 传统时值表示 如 quarter, half（保持向后兼容）
-        duration := p.currentToken.Literal
-        p.nextToken()
-        
-        // 检查附点
-        if p.currentToken.Type == DOT {
-            duration = duration + "."
-            p.nextToken()
-        }
-        
-        return duration
+    if p.currentToken.Type != SLASH {
+        // 如果没有时值，可能返回了默认值？
+        return "1/4"  // ← 这里可能有问题
     }
-
-    // 没有指定时值，使用默认
-    return defaultDuration
+    
+    p.nextToken() // 跳过 '/'
+    
+    if p.currentToken.Type != NUMBER {
+        p.addError("期望时值数字")
+        return "1/4"  // ← 默认值
+    }
+    
+    duration := "1/" + p.currentToken.Literal
+    p.nextToken()
+    
+    return duration
 }
 
 // 完全重写parseChord方法
 func (p *Parser) parseChord() *ast.ChordNode {
-    position := p.currentToken.Position
+	position := p.currentToken.Position
 
-    if !p.expectToken(LBRACKET) {
-        return nil
-    }
+	if !p.expectToken(LBRACKET) {
+		return nil
+	}
 
-    var content interface{}
+	var content interface{}
 
-    // 检查是和弦名还是音符列表
-    if p.currentToken.Type == IDENTIFIER {
-        // 和弦名 如 Am, Cmaj
-        chordName := p.currentToken.Literal
-        content = chordName
-        p.nextToken()
-    } else {
-        // 音符列表 如 [C4 E4 G4]
-        notes := []*ast.NoteNode{}
-        for p.currentToken.Type != RBRACKET && p.currentToken.Type != EOF {
-            if p.isNoteToken(p.currentToken.Type) {
-                note := p.parseNote()
-                if note != nil {
-                    notes = append(notes, note)
-                }
-            } else {
-                p.addError(fmt.Sprintf("期望音符，得到 %s", p.currentToken.Literal))
-                p.nextToken()
-            }
-        }
-        content = notes
-    }
+	// 检查是和弦名还是音符列表
+	if p.currentToken.Type == IDENTIFIER {
+		// 和弦名 如 Am, Cmaj
+		chordName := p.currentToken.Literal
+		content = chordName
+		p.nextToken()
+	} else {
+		// 音符列表 如 [C4 E4 G4]
+		notes := []*ast.NoteNode{}
+		for p.currentToken.Type != RBRACKET && p.currentToken.Type != EOF {
+			if p.isNoteToken(p.currentToken.Type) {
+				note := p.parseNote()
+				if note != nil {
+					notes = append(notes, note)
+				}
+			} else {
+				p.addError(fmt.Sprintf("期望音符，得到 %s", p.currentToken.Literal))
+				p.nextToken()
+			}
+		}
+		content = notes
+	}
 
-    if !p.expectToken(RBRACKET) {
-        return nil
-    }
+	if !p.expectToken(RBRACKET) {
+		return nil
+	}
 
-    // 解析和弦时值
-    duration := p.parseNoteDuration()
+	// 解析和弦时值
+	duration := p.parseNoteDuration()
 
-    return &ast.ChordNode{
-        Content:  content,
-        Duration: duration,
-        Position: position,
-    }
+	return &ast.ChordNode{
+		Content:  content,
+		Duration: duration,
+		Position: position,
+	}
 }
 
 // 修改parseRest方法
 func (p *Parser) parseRest() *ast.RestNode {
-    position := p.currentToken.Position
+	position := p.currentToken.Position
 
-    if p.currentToken.Literal != "rest" {
-        p.addError(fmt.Sprintf("期望 'rest'，得到 %s", p.currentToken.Literal))
-        return nil
-    }
+	if p.currentToken.Literal != "rest" {
+		p.addError(fmt.Sprintf("期望 'rest'，得到 %s", p.currentToken.Literal))
+		return nil
+	}
 
-    p.nextToken()
+	p.nextToken()
 
-    // 解析休止符时值
-    duration := p.parseNoteDuration()
+	// 解析休止符时值
+	duration := p.parseNoteDuration()
 
-    return &ast.RestNode{
-        Duration: duration,
-        Position: position,
-    }
+	return &ast.RestNode{
+		Duration: duration,
+		Position: position,
+	}
 }
 
 // 新增：解析分组音符（处理括号）
 func (p *Parser) parseGroup() *ast.GroupNode {
-    position := p.currentToken.Position
+	position := p.currentToken.Position
 
-    if !p.expectToken(LPAREN) {
-        return nil
-    }
+	if !p.expectToken(LPAREN) {
+		return nil
+	}
 
-    group := &ast.GroupNode{
-        Elements: []ast.ElementNode{},
-        Position: position,
-    }
+	group := &ast.GroupNode{
+		Elements: []ast.ElementNode{},
+		Position: position,
+	}
 
-    // 解析组内元素
-    for p.currentToken.Type != RPAREN && p.currentToken.Type != EOF {
-        element := p.parsePlayableElement()
-        if element != nil {
-            group.Elements = append(group.Elements, element)
-        }
-    }
+	// 解析组内元素
+	for p.currentToken.Type != RPAREN && p.currentToken.Type != EOF {
+		element := p.parsePlayableElement()
+		if element != nil {
+			group.Elements = append(group.Elements, element)
+		}
+	}
 
-    if !p.expectToken(RPAREN) {
-        return nil
-    }
+	if !p.expectToken(RPAREN) {
+		return nil
+	}
 
-    // 组可以有整体时值修饰符
-    group.Duration = p.parseNoteDuration()
+	// 组可以有整体时值修饰符
+	group.Duration = p.parseNoteDuration()
 
-    return group
+	return group
 }
-
 
 // 新增：解析可播放元素的通用方法
 func (p *Parser) parsePlayableElement() ast.PlayableNode {
     switch p.currentToken.Type {
-    case NOTE_C, NOTE_D, NOTE_E, NOTE_F, NOTE_G, NOTE_A, NOTE_B:
+    // 扩展音符支持 - 添加半音音符
+    case NOTE_C, NOTE_D, NOTE_E, NOTE_F, NOTE_G, NOTE_A, NOTE_B,
+         NOTE_CS, NOTE_DS, NOTE_FS, NOTE_GS, NOTE_AS,
+         NOTE_DB, NOTE_EB, NOTE_GB, NOTE_AB, NOTE_BB:
         return p.parseNote()
     case LBRACKET:
         return p.parseChord()
@@ -515,8 +493,6 @@ func (p *Parser) parsePlayableElement() ast.PlayableNode {
         return nil
     }
 }
-
-// 更新parseContainerElement方法，支持分组
 func (p *Parser) parseContainerElement() ast.ASTNode {
     switch p.currentToken.Type {
     case SET:
@@ -525,7 +501,10 @@ func (p *Parser) parseContainerElement() ast.ASTNode {
         return p.parseSection()
     case TRACK:
         return p.parseTrack()
-    case NOTE_C, NOTE_D, NOTE_E, NOTE_F, NOTE_G, NOTE_A, NOTE_B:
+    // 扩展音符支持 - 添加半音音符
+    case NOTE_C, NOTE_D, NOTE_E, NOTE_F, NOTE_G, NOTE_A, NOTE_B,
+         NOTE_CS, NOTE_DS, NOTE_FS, NOTE_GS, NOTE_AS,
+         NOTE_DB, NOTE_EB, NOTE_GB, NOTE_AB, NOTE_BB:
         return p.parseNote()
     case LBRACKET:
         return p.parseChord()
@@ -561,28 +540,35 @@ func (p *Parser) expectToken(expectedType TokenType) bool {
 }
 
 func (p *Parser) isNoteToken(tokenType TokenType) bool {
-	return tokenType == NOTE_C || tokenType == NOTE_D ||
-		tokenType == NOTE_E || tokenType == NOTE_F ||
-		tokenType == NOTE_G || tokenType == NOTE_A ||
-		tokenType == NOTE_B
+    return tokenType == NOTE_C || tokenType == NOTE_D ||
+        tokenType == NOTE_E || tokenType == NOTE_F ||
+        tokenType == NOTE_G || tokenType == NOTE_A ||
+        tokenType == NOTE_B ||
+        // 添加半音音符支持
+        tokenType == NOTE_CS || tokenType == NOTE_DS ||
+        tokenType == NOTE_FS || tokenType == NOTE_GS ||
+        tokenType == NOTE_AS ||
+        tokenType == NOTE_DB || tokenType == NOTE_EB ||
+        tokenType == NOTE_GB || tokenType == NOTE_AB ||
+        tokenType == NOTE_BB
 }
 
 // 更新时值验证方法
 func (p *Parser) isValidDuration(duration string) bool {
-    // 传统时值名称（保持向后兼容）
-    validDurations := []string{"whole", "half", "quarter", "eighth", "sixteenth"}
-    for _, valid := range validDurations {
-        if duration == valid {
-            return true
-        }
-    }
-    
-    // 分数形式时值验证（可选）
-    if strings.HasPrefix(duration, "1/") {
-        return true
-    }
-    
-    return false
+	// 传统时值名称（保持向后兼容）
+	validDurations := []string{"whole", "half", "quarter", "eighth", "sixteenth"}
+	for _, valid := range validDurations {
+		if duration == valid {
+			return true
+		}
+	}
+
+	// 分数形式时值验证（可选）
+	if strings.HasPrefix(duration, "1/") {
+		return true
+	}
+
+	return false
 }
 
 // Token类型转字符串（用于错误信息）

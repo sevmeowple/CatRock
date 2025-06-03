@@ -135,3 +135,36 @@ func NewChordElementFromQuality(root core.Note, quality core.ChordQuality) *Chor
     chord := core.NewChordFromQuality(root, quality)
     return &ChordElement{Chord: chord}
 }
+
+func (ne *ChordElement) DetailedString(indent string) string {
+    // 遍历拼接Chord里面所有Note作为ChordName
+    var chordName string
+    for i, note := range ne.Chord.Notes {
+        if i > 0 {
+            chordName += " + "
+        }
+        chordName += fmt.Sprintf("%s%d", note.Name.String(), note.Octave)
+    }
+
+    result := fmt.Sprintf("Chord '%s' {\n", chordName)
+    result += fmt.Sprintf("%s  ID: %s\n", indent, ne.GetID())
+
+    result += fmt.Sprintf("%s  时长: %.3f拍\n", indent, ne.Duration(PlayContext{}))
+    
+    // 显示覆盖参数
+    if ne.VolumeOverride != nil || ne.InstrumentOverride != nil || ne.ChannelOverride != nil {
+        result += fmt.Sprintf("%s  覆盖参数:\n", indent)
+        if ne.VolumeOverride != nil {
+            result += fmt.Sprintf("%s    音量: %d\n", indent, *ne.VolumeOverride)
+        }
+        if ne.InstrumentOverride != nil {
+            result += fmt.Sprintf("%s    乐器: %d\n", indent, int(*ne.InstrumentOverride))
+        }
+        if ne.ChannelOverride != nil {
+            result += fmt.Sprintf("%s    通道: %d\n", indent, *ne.ChannelOverride)
+        }
+    }
+    
+    result += fmt.Sprintf("%s}\n", indent)
+    return result
+}

@@ -107,3 +107,28 @@ func (ne *NoteElement) getNoteName() string {
 func NewNoteElement(note core.Note) *NoteElement {
     return &NoteElement{Note: note}
 }
+
+func (ne *NoteElement) DetailedString(indent string) string {
+    result := fmt.Sprintf("Note '%s' {\n", ne.getNoteName())
+    result += fmt.Sprintf("%s  ID: %s\n", indent, ne.GetID())
+    result += fmt.Sprintf("%s  MIDI: %v\n", indent, ne.Note.MIDINote)
+    result += fmt.Sprintf("%s  时长: %.3f拍\n", indent, ne.Duration(PlayContext{}))
+    result += fmt.Sprintf("%s  节拍: %.3f\n", indent, float64(ne.Note.Beat))
+    
+    // 显示覆盖参数
+    if ne.VolumeOverride != nil || ne.InstrumentOverride != nil || ne.ChannelOverride != nil {
+        result += fmt.Sprintf("%s  覆盖参数:\n", indent)
+        if ne.VolumeOverride != nil {
+            result += fmt.Sprintf("%s    音量: %d\n", indent, *ne.VolumeOverride)
+        }
+        if ne.InstrumentOverride != nil {
+            result += fmt.Sprintf("%s    乐器: %d\n", indent, int(*ne.InstrumentOverride))
+        }
+        if ne.ChannelOverride != nil {
+            result += fmt.Sprintf("%s    通道: %d\n", indent, *ne.ChannelOverride)
+        }
+    }
+    
+    result += fmt.Sprintf("%s}\n", indent)
+    return result
+}

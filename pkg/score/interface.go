@@ -8,6 +8,8 @@ type Playable interface {
     Duration(context PlayContext) float64
     GetID() string
     GetType() PlayableType
+
+    DetailedString(indent string) string
 }
 
 // 播放元素类型
@@ -30,7 +32,7 @@ type Container interface {
     AddElement(element Playable)
     SetBPM(bpm float64)
     SetVolume(volume int)
-    SetInstrument(instrument core.InstrumentID)
+    SetInstrument(instrument int)
     SetChannel(channel int)
 }
 

@@ -61,8 +61,8 @@ var TrackParameters = map[string]ParameterSpec{
     },
     "instrument": {
         Name:         "instrument",
-        Type:         ParamString,
-        DefaultValue: "piano",
+        Type:         ParamInt,
+        DefaultValue: 0, // 默认乐器ID
         Required:     false,
         Description:  "乐器类型",
     },
@@ -86,8 +86,8 @@ var SectionParameters = map[string]ParameterSpec{
     },
     "instrument": {
         Name:         "instrument",
-        Type:         ParamString,
-        DefaultValue: "piano",
+        Type:         ParamInt,
+        DefaultValue: 0, // 默认乐器ID
         Required:     false,
         Description:  "乐器类型",
     },
@@ -107,10 +107,48 @@ type SetNode struct {
     Position   mytype.Position
 }
 
+var _ ASTNode = (*SetNode)(nil)
+
 func (s *SetNode) String() string {
     return fmt.Sprintf("Set{Parameters: %v, Position: %s}", s.Parameters, s.Position)
 }
 
+func (s *SetNode) DetailedString(indent string) string {
+    result := fmt.Sprintf("SetNode {\n")
+    result += fmt.Sprintf("%s  上下文: %s\n", indent, s.getContextName())
+    result += fmt.Sprintf("%s  位置: %s\n", indent, s.Position)
+    
+    if len(s.Parameters) > 0 {
+        result += fmt.Sprintf("%s  参数:\n", indent)
+        for key, value := range s.Parameters {
+            result += fmt.Sprintf("%s    %s: %v (%T)\n", indent, key, value, value)
+        }
+    }
+    
+    // 显示解析后的参数
+    if resolved, err := s.ResolveParameters(); err == nil {
+        result += fmt.Sprintf("%s  解析后参数:\n", indent)
+        for key, value := range resolved {
+            result += fmt.Sprintf("%s    %s: %v (%T)\n", indent, key, value, value)
+        }
+    }
+    
+    result += fmt.Sprintf("%s}\n", indent)
+    return result
+}
+
+func (s *SetNode) getContextName() string {
+    switch s.Context {
+    case GlobalContext:
+        return "Global"
+    case TrackContext:
+        return "Track"
+    case SectionContext:
+        return "Section"
+    default:
+        return "Unknown"
+    }
+}
 // 参数解析和验证
 func (s *SetNode) ResolveParameters() (map[string]interface{}, error) {
     resolved := make(map[string]interface{})

@@ -7,6 +7,7 @@ import (
 // AST节点基础接口
 type ASTNode interface {
     String() string
+    DetailedString(indent string) string
 }
 
 // 可播放元素接口 - 能转换为score.Playable

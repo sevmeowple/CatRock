@@ -162,21 +162,28 @@ var keywords = map[string]TokenType{
 	"track":   TRACK,
 	"section": SECTION,
 
-	// 大小写都映射
-	"c":       NOTE_C,
-	"d":       NOTE_D,
-	"e":       NOTE_E,
-	"f":       NOTE_F,
-	"g":       NOTE_G,
-	"a":       NOTE_A,
-	"b":       NOTE_B,
-	"C":       NOTE_C,
-	"D":       NOTE_D,
-	"E":       NOTE_E,
-	"F":       NOTE_F,
-	"G":       NOTE_G,
-	"A":       NOTE_A,
-	"B":       NOTE_B,
+    // 基本音符（大小写都支持）
+    "C": NOTE_C, "c": NOTE_C,
+    "D": NOTE_D, "d": NOTE_D,
+    "E": NOTE_E, "e": NOTE_E,
+    "F": NOTE_F, "f": NOTE_F,
+    "G": NOTE_G, "g": NOTE_G,
+    "A": NOTE_A, "a": NOTE_A,
+    "B": NOTE_B, "b": NOTE_B,
+    
+    // 升号音符 (s后缀，键盘友好)
+    "Cs": NOTE_CS, "cs": NOTE_CS,
+    "Ds": NOTE_DS, "ds": NOTE_DS,
+    "Fs": NOTE_FS, "fs": NOTE_FS,
+    "Gs": NOTE_GS, "gs": NOTE_GS,
+    "As": NOTE_AS, "as": NOTE_AS,
+    
+    // 降号音符 (b后缀)
+    "Db": NOTE_DB, "db": NOTE_DB,
+    "Eb": NOTE_EB, "eb": NOTE_EB,
+    "Gb": NOTE_GB, "gb": NOTE_GB,
+    "Ab": NOTE_AB, "ab": NOTE_AB,
+    "Bb": NOTE_BB, "bb": NOTE_BB,
 	"quarter": IDENTIFIER,
 	"half":    IDENTIFIER,
 	"whole":   IDENTIFIER,

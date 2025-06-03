@@ -77,6 +77,34 @@ func (s *Score) String() string {
 		s.Title, s.Composer, s.BPM, s.GetDuration())
 }
 
+// 新增：详细字符串方法
+func (s *Score) DetailedString(indent string) string {
+	result := fmt.Sprintf("%sScore {\n", indent)
+	result += fmt.Sprintf("%s  标题: %s\n", indent, s.Title)
+	result += fmt.Sprintf("%s  作曲: %s\n", indent, s.Composer)
+	result += fmt.Sprintf("%s  年份: %d\n", indent, s.Year)
+	result += fmt.Sprintf("%s  BPM: %.1f\n", indent, s.BPM)
+	result += fmt.Sprintf("%s  音量: %d\n", indent, s.Volume)
+	result += fmt.Sprintf("%s  时长: %.2f秒\n", indent, s.GetDuration())
+
+	if len(s.GlobalSettings) > 0 {
+		result += fmt.Sprintf("%s  全局设置:\n", indent)
+		for key, value := range s.GlobalSettings {
+			result += fmt.Sprintf("%s    %s: %v (%T)\n", indent, key, value, value)
+		}
+	}
+
+	if s.RootElement != nil {
+		result += fmt.Sprintf("%s  根元素:\n", indent)
+		result += s.RootElement.DetailedString(indent + "    ")
+	} else {
+		result += fmt.Sprintf("%s  根元素: (无)\n", indent)
+	}
+
+	result += fmt.Sprintf("%s}\n", indent)
+	return result
+}
+
 // 创建播放上下文
 func (s *Score) createPlayContext() PlayContext {
 	return NewPlayContext(s.BPM, s.Volume)
@@ -97,18 +125,6 @@ func (s *Score) PlayWithIO(ioDevice io.IO) error {
 	return engine.PlayEventsWithIO(ioDevice, events)
 }
 
-// 异步播放，返回控制通道
-func (s *Score) PlayWithIOAsync(ioDevice io.IO) (chan error, chan bool, error) {
-	// 生成事件
-	engine := NewPlayEngine(s)
-	events, err := engine.GenerateEvents()
-	if err != nil {
-		return nil, nil, fmt.Errorf("生成事件失败: %v", err)
-	}
-
-	// 异步播放
-	return engine.PlayEventsWithIOAsync(ioDevice, events), nil, nil
-}
 
 // PlayEngine的播放方法
 func (pe *PlayEngine) PlayEventsWithIO(ioDevice io.IO, events []Event) error {
@@ -147,7 +163,7 @@ func (pe *PlayEngine) PlayEventsWithIO(ioDevice io.IO, events []Event) error {
 }
 
 // 异步播放事件
-func (pe *PlayEngine) PlayEventsWithIOAsync(ioDevice io.IO, events []Event) chan error {
+func (pe *PlayEngine) PlayEventsWithIOAsync(ioDevice io.IO, events []Event) (<-chan error,error) {
 	errChan := make(chan error, 1)
 
 	go func() {
@@ -158,7 +174,7 @@ func (pe *PlayEngine) PlayEventsWithIOAsync(ioDevice io.IO, events []Event) chan
 		}
 	}()
 
-	return errChan
+	return errChan, nil
 }
 
 // 执行单个事件
@@ -184,7 +200,16 @@ func (pe *PlayEngine) executeEventWithIO(ioDevice io.IO, event Event) error {
 
 	case PROGRAM_CHANGE:
 		if program, ok := event.Data.(core.InstrumentID); ok {
-			return ioDevice.SetProgram(program)
+			if core.IsDrumKit(program) {
+				if event.Channel != 9 {
+					fmt.Printf("WARNING: 鼓组程序变更事件不应在非鼓组通道发送 - 通道:%d, 程序:%d\n", event.Channel, program)
+					return nil // 跳过非鼓组通道的程序变更
+				}
+				return nil
+			}
+
+			midiProgram := core.GetMIDIProgram(program)
+			return ioDevice.SendProgramChange(uint8(event.Channel), midiProgram)
 		}
 		return fmt.Errorf("PROGRAM_CHANGE事件数据类型错误")
 
@@ -249,41 +274,6 @@ type PlayStats struct {
 	TotalTracks   int
 	TotalSections int
 	ChannelsUsed  []int
-}
-
-func (pe *PlayEngine) GetPlayStats() PlayStats {
-	stats := PlayStats{
-		TotalDuration: pe.score.GetDuration(),
-		ChannelsUsed:  []int{},
-	}
-
-	// 统计各种元素
-	channelMap := make(map[int]bool)
-
-	for _, event := range pe.events {
-		// 统计通道使用
-		channelMap[event.Channel] = true
-
-		// 统计元素类型（简化版，基于事件类型）
-		switch event.Type {
-		case NOTE_EVENT:
-			if event.Action == NOTE_ON {
-				stats.TotalNotes++
-			}
-		case CHORD_EVENT:
-			if event.Action == NOTE_ON {
-				stats.TotalChords++
-			}
-		}
-	}
-
-	// 转换通道映射为切片
-	for channel := range channelMap {
-		stats.ChannelsUsed = append(stats.ChannelsUsed, channel)
-	}
-	sort.Ints(stats.ChannelsUsed)
-
-	return stats
 }
 
 // 验证Score完整性
@@ -360,59 +350,4 @@ func (s *Score) exportJSON(options ExportOptions) error {
 func (s *Score) exportXML(options ExportOptions) error {
 	// TODO: 实现XML导出
 	return fmt.Errorf("XML导出尚未实现")
-}
-
-// 调试功能
-func (s *Score) PrintStructure() {
-	fmt.Printf("=== Score Structure ===\n")
-	fmt.Printf("Title: %s\n", s.Title)
-	fmt.Printf("Composer: %s\n", s.Composer)
-	fmt.Printf("BPM: %.1f\n", s.BPM)
-	fmt.Printf("Volume: %d\n", s.Volume)
-	fmt.Printf("Duration: %.2fs\n", s.GetDuration())
-
-	if s.RootElement != nil {
-		fmt.Printf("Root Element: %s (Type: %v)\n",
-			s.RootElement.GetID(), s.RootElement.GetType())
-	}
-
-	fmt.Printf("=======================\n")
-}
-
-func (pe *PlayEngine) PrintEvents(limit int) {
-	fmt.Printf("=== Event Timeline ===\n")
-
-	maxEvents := len(pe.events)
-	if limit > 0 && limit < maxEvents {
-		maxEvents = limit
-	}
-
-	for i := 0; i < maxEvents; i++ {
-		event := pe.events[i]
-		fmt.Printf("%.3fs [Ch%d] %s %v (from %s)\n",
-			event.Time,
-			event.Channel,
-			actionToString(event.Action),
-			event.Data,
-			event.SourceElement)
-	}
-
-	if len(pe.events) > maxEvents {
-		fmt.Printf("... 和其他 %d 个事件\n", len(pe.events)-maxEvents)
-	}
-
-	fmt.Printf("======================\n")
-}
-
-func actionToString(action EventAction) string {
-	switch action {
-	case NOTE_ON:
-		return "NOTE_ON"
-	case NOTE_OFF:
-		return "NOTE_OFF"
-	case VOLUME_CHANGE:
-		return "VOLUME_CHANGE"
-	default:
-		return "UNKNOWN"
-	}
 }

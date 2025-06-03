@@ -1,0 +1,61 @@
+set {
+    BPM: 120
+    base_duration: 1/4
+}
+
+track japanese_rhythm {
+    // 低音节奏线 - 模拟鼓的节奏感
+    section bass_rhythm {
+        set {
+            channel: 1
+            instrument: 32  // Acoustic Bass (如果这个听起来像钢琴就换别的)
+            velocity: 90
+        }
+        // 日式流行的低音节奏模式
+        C2/4 rest/8 C2/8 C2/4 rest/8 C2/8 C2/4 rest/4
+        C2/4 C2/8 rest/8 C2/4 rest/4 C2/4 C2/8 C2/8
+        C2/4 rest/8 C2/8 C2/4 C2/8 rest/8 C2/4 rest/4
+        C2/4 C2/8 rest/8 C2/4 rest/8 C2/8 C2/2
+    }
+    
+    // 中音和声 - 营造和谐感
+    section harmony {
+        set {
+            channel: 2
+            instrument: 1   // Acoustic Grand Piano
+            velocity: 60
+        }
+        // 简单的和弦进行
+        [C4 E4 G4]/2 rest/2 [C4 E4 G4]/2 rest/2
+        [A3 C4 E4]/2 rest/2 [F3 A3 C4]/2 rest/2  
+        [G3 B3 D4]/2 rest/2 [C4 E4 G4]/1
+    }
+    
+    // 高音装饰旋律
+    section melody {
+        set {
+            channel: 3
+            instrument: 73  // Flute - 比较轻盈的日式感觉
+            velocity: 70
+        }
+        // 日式风格的装饰音型
+        rest/4 G5/8 A5/8 G5/4 E5/8 D5/8 C5/4 rest/4
+        rest/4 A5/8 G5/8 E5/4 D5/8 C5/8 D5/4 rest/4
+        rest/4 G5/8 A5/8 B5/4 A5/8 G5/8 E5/2
+        rest/2 G5/4 E5/4 C5/1
+    }
+    
+    // 节拍强调 - 用打击乐器模拟节拍
+    section accent {
+        set {
+            channel: 4  
+            instrument: 115 // Woodblock - 木鱼声，有点日式打击乐感觉
+            velocity: 80
+        }
+        // 在强拍和弱拍做不同的强调
+        C4/4 rest/4 C4/8 rest/8 C4/4 rest/4 C4/8 rest/8
+        C4/4 rest/8 C4/8 rest/4 C4/4 rest/8 C4/8 rest/4  
+        C4/4 rest/4 C4/8 C4/8 C4/4 rest/4 C4/2
+        rest/2 C4/4 rest/4 C4/1
+    }
+}
